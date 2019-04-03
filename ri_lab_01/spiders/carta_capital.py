@@ -18,6 +18,17 @@ class CartaCapitalSpider(scrapy.Spider):
         self.start_urls = list(data.values())
 
     def parse(self, response):
+        for article in response.css('div.eltdf-pt-three-item eltdf-post-item eltdf-active-post-page'):
+            
+            yield {
+                'titulo': article.css('div.eltdf-pt-three-content-holder h3 a').get(),
+                'subtitulo': article.css('div.eltdf-pt-three-excerpt p').get(),
+                'autor': article.css('div.eltdf-post-info-author a').get(),
+                'data': article.css('div.eltdf-post-info-date entry-date updated a').get(),
+                'secao': 'mundo',
+                'texto': article.css('span.text::text').get(),
+                'url': article.css('').get()
+            }
         #
         # inclua seu código aqui
         #
