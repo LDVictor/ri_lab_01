@@ -69,8 +69,16 @@ class CartaCapitalSpider(scrapy.Spider):
         return response.css('div.eltdf-post-info-category a::text').get()
 
     def getTexto(self, response):
-        # falta ajustar texto
-        return response.css('div.eltdf-post-text-inner clearfix p::text, p::text, p::text, p::text, p::text, p::text, p::text').get()
+        return self.formataTexto(response.css('div.eltdf-post-text-inner clearfix p::text, p::text, p::text, p::text, p::text, p::text, p::text').getall())
 
     def getUrl(self, response):
         return response.request.url
+
+    def formataTexto(self, textos):
+        textoFormatado = ''
+        if textos is not None:
+            for i in range(1, len(textos) - 1):
+                textoFormatado = textoFormatado + textos[i] + ' '
+            textoFormatado = textoFormatado + textos[len(textos) - 1]
+
+        return textoFormatado
