@@ -4,6 +4,7 @@ import json
 
 from ri_lab_01.items import RiLab01Item
 from ri_lab_01.items import RiLab01CommentItem
+from datetime import datetime
 
 
 class CartaCapitalSpider(scrapy.Spider):
@@ -33,8 +34,8 @@ class CartaCapitalSpider(scrapy.Spider):
 
         for proximaPagina in response.css('a::attr(href)').getall():
             if self.urlValida(proximaPagina):
-                self.visitados.append(proximaPagina)
                 yield scrapy.Request(proximaPagina, callback=self.parse)
+            self.visitados.append(proximaPagina)
 
         page = response.url.split("/")[-2]
         filename = 'quotes-%s.html' % page
@@ -46,9 +47,9 @@ class CartaCapitalSpider(scrapy.Spider):
         return response.css('article').get() is not None
 
     def artigoValido(self, page_article):
-        string_date = page_article.css('div.eltdf-post-info-date a::text').get()
-        year = int(string_date.split(" de ")[2])
-        return year == 2019
+        dataArtigo = self.getDataPagina(page_article)
+        anoArtigo = dataArtigo.year
+        return anoArtigo >= 2018
 
     def urlValida(self, url):
         return ('https://www.cartacapital.com.br/economia' in url or 'https://www.cartacapital.com.br/sociedade' in url or 'https://www.cartacapital.com.br/politica' in url or 'https://www.cartacapital.com.br/justica' in url or 'https://www.cartacapital.com.br/mundo' in url) and (url is not None) and (self.visitados.count(url) == 0)
@@ -63,22 +64,22 @@ class CartaCapitalSpider(scrapy.Spider):
         return response.css('div.eltdf-title-post-author-info a::text').get()
 
     def getData(self, response):
-        return response.css('div.eltdf-post-info-date a::text').get()
+        dataArtigo = self.getDataPagina(response)
+        dataFormatada = dataArtigo.strftime('%d/%m/%Y %H:%M:%S')
+        return dataFormatada
 
     def getSecao(self, response):
         return response.css('div.eltdf-post-info-category a::text').get()
 
     def getTexto(self, response):
-        return self.formataTexto(response.css('div.eltdf-post-text-inner clearfix p::text, p::text, p::text, p::text, p::text, p::text, p::text').getall())
+        return "".join(response.css('article p::text').getall())
 
     def getUrl(self, response):
         return response.request.url
 
-    def formataTexto(self, textos):
-        textoFormatado = ''
-        if textos is not None:
-            for i in range(1, len(textos) - 1):
-                textoFormatado = textoFormatado + textos[i] + ' '
-            textoFormatado = textoFormatado + textos[len(textos) - 1]
-
-        return textoFormatado
+    def getDataPagina(self, response):
+        simbolo = "+"
+        indice = 0
+        strResponseData = response.xpath("//meta[@property='article:published_time']/@content").get().replace("T", " ").split(simbolo)[indice]
+        responseData = datetime.strptime(strResponseData, '%Y-%m-%d %H:%M:%S')
+        return responseData
